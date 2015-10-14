@@ -108,7 +108,15 @@ class ChangeCategoryPreferences(AddonPreferences):
             col.prop(wm, "panel_category")
 
 def register():
+    bpy.types.WindowManager.chosen_panel = bpy.props.StringProperty(update=get_category)
+    bpy.utils.register_class(GroupNames)
+    bpy.utils.register_class(ChangeCategoryPreferences)
+    preferences = bpy.context.user_preferences.addons[__name__].preferences
+
     if bpy.context.user_preferences.addons[-1].module != __name__:
+        cache = {}
+        for k in preferences.tool_panels:
+            cache[k.name] = k.idname, k.category, k.defa_cat
         # Register this addon last next startup
         module_name = __name__
         addons = bpy.context.user_preferences.addons
@@ -120,12 +128,15 @@ def register():
 
         addon = addons.new()
         addon.module = module_name
+        preferences = bpy.context.user_preferences.addons[module_name].preferences
+        for k, v in cache.items():
+            my_item = preferences.tool_panels.add()
+            my_item.name = k
+            my_item.idname = v[0]
+            my_item.category = v[1]
+            my_item.defa_cat = v[2]
+        del cache
 
-
-    bpy.types.WindowManager.chosen_panel = bpy.props.StringProperty(update=get_category)
-    bpy.utils.register_class(GroupNames)
-    bpy.utils.register_class(ChangeCategoryPreferences)
-    preferences = bpy.context.user_preferences.addons[__name__].preferences
     #print(preferences.tool_panels)
     bpy.types.WindowManager.panel_category = bpy.props.StringProperty(
         name="Category",
@@ -140,11 +151,7 @@ def register():
             name = panel.bl_category + ' (' + panel.bl_label + ', ' + panel.__name__ + ')'
             #if name not in preferences.tool_panels:
             for pref in preferences.tool_panels:
-                if hasattr(panel, 'bl_idname'):
-                    id_name = panel.bl_idname
-                else:
-                    id_name = panel.__name__
-                if id_name == pref.idname:
+                if panel.__name__ == pref.idname:
                     if panel.bl_category != pref.category and\
                        panel.is_registered:
                         #print(name, ' to ', pref.category)
@@ -157,10 +164,7 @@ def register():
             else:
                 my_item = preferences.tool_panels.add()
                 my_item.name = name
-                if hasattr(panel, 'bl_idname'):
-                    my_item.idname = panel.bl_idname
-                else:
-                    my_item.idname = panel.__name__
+                my_item.idname = panel.__name__
                 my_item.category = panel.bl_category
                 my_item.defa_cat = panel.bl_category
 
