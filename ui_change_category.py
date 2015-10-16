@@ -151,7 +151,11 @@ def register():
             name = panel.bl_category + ' (' + panel.bl_label + ', ' + panel.__name__ + ')'
             #if name not in preferences.tool_panels:
             for pref in preferences.tool_panels:
-                if panel.__name__ == pref.idname:
+                if hasattr(panel, 'bl_idname'):
+                    id_name = panel.bl_idname
+                else:
+                    id_name = panel.__name__
+                if id_name == pref.idname:
                     if panel.bl_category != pref.category and\
                        panel.is_registered:
                         #print(name, ' to ', pref.category)
@@ -164,7 +168,10 @@ def register():
             else:
                 my_item = preferences.tool_panels.add()
                 my_item.name = name
-                my_item.idname = panel.__name__
+                if hasattr(panel, 'bl_idname'):
+                    my_item.idname = panel.bl_idname		
+                else:		
+                    my_item.idname = panel.__name__
                 my_item.category = panel.bl_category
                 my_item.defa_cat = panel.bl_category
 
